@@ -119,7 +119,7 @@ export const adminLogin = async (req, res) => {
         success: true,
         message: "Admin login successful",
         token,
-        admin,
+        admin: { ...admin._doc, role: "admin" }, 
       });
   } catch (error) {
     console.log("Admin Login Error:", error);
@@ -248,3 +248,4 @@ export const updateProfilePic = async (req, res) => {
     });
   }
 };
+
