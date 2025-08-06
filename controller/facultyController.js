@@ -100,12 +100,13 @@ export const facultyLogin = async (req, res) => {
         httpOnly: process.env.NODE_ENV === "production" ? true : false,
         sameSite: process.env.NODE_ENV === "production" ? true : false,
       })
-      .send({
+     .send({
         success: true,
         message: "Login successfully",
         token,
-        faculty,
+        faculty: { ...faculty._doc, role: "faculty" }, 
       });
+    
   } catch (error) {
     console.log(error);
     res.status(500).send({
@@ -259,3 +260,4 @@ export const dropFaculty = async (req, res) => {
     });
   }
 };
+
