@@ -67,10 +67,11 @@ adminSchema.methods.comparePassword = async function (plainPassword) {
 
 //JWT token
 adminSchema.methods.generateToken = function () {
-  return JWT.sign({ userId: this._id }, process.env.JWT_SECRET, {
+  return JWT.sign({ adminId: this._id }, process.env.JWT_SECRET, {
     expiresIn: "15d",
   });
 };
 
 export const adminModel = mongoose.model("admin", adminSchema);
 export default adminModel;
+
