@@ -104,7 +104,7 @@ export const loginController = async (req, res) => {
         success: true,
         message: "Login successfully",
         token,
-        user,
+        user: { ...user._doc, role: "user" }, 
       });
   } catch (error) {
     console.log(error);
@@ -256,3 +256,4 @@ export const dropUser = async (req, res) => {
     });
   }
 };
+
