@@ -16,10 +16,10 @@ const router = express.Router();
 // routes
 router.post("/admin-reg", adminRegister);
 router.post("/admin-login", adminLogin);
-router.get("/admin-logout", isAuth, isAdmin, adminLogout);
-router.get("/admin-profile", isAuth, isAdmin, adminProfile);
-router.put("/admin-updatepass", isAuth, isAdmin, adminUpdatePassword);
-router.put("/admin-updatepic", isAuth, isAdmin, singleUpload, updateProfilePic);
+router.get("/admin-logout", isAdmin, adminLogout);
+router.get("/admin-profile", isAdmin, adminProfile);
+router.put("/admin-updatepass", isAdmin, adminUpdatePassword);
+router.put("/admin-updatepic", isAdmin, singleUpload, updateProfilePic);
 
 // export router
 export default router;
