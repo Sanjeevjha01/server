@@ -3,72 +3,108 @@ import userModel from "../models/userModel.js";
 import facultyModel from "../models/facultyModel.js";
 import adminModel from "../models/adminModel.js";
 
-// USER AUTH
+// UNIFIED AUTH - Check all user types
 export const isAuth = async (req, res, next) => {
   try {
     const { token } = req.cookies;
+    
     // validation
     if (!token) {
       return res.status(401).send({
         success: false,
-        message: "Unauthorized user",
+        message: "Unauthorized - No token provided",
       });
     }
-    const decodeData = jwt.verify(token, process.env.JWT_SECRET);
-    let user = await userModel.findById(decodeData.userId);
 
-    // If not found in users, try admin model
-    if (!user) {
-      user = await adminModel.findById(decodeData.userId);
+    const decodeData = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded token data:", decodeData); // For debugging
+    
+    let user = null;
+    
+    // Try to find user in all models
+    // Check regular user model first
+    if (decodeData.userId) {
+      user = await userModel.findById(decodeData.userId);
       if (user) {
-        req.admin = user;
+        req.user = user;
+        req.userType = 'user';
+        return next();
       }
     }
 
-    if (!user) {
-      return res.status(401).send({
-        success: false,
-        message: "User not found",
-      });
+    // Check faculty model
+    if (decodeData.facultyId || decodeData.userId) {
+      user = await facultyModel.findById(decodeData.facultyId || decodeData.userId);
+      if (user) {
+        req.faculty = user;
+        req.user = user; // Also set as user for compatibility
+        req.userType = 'faculty';
+        return next();
+      }
     }
-    req.user = user;
-    next();
+
+    // Check admin model
+    if (decodeData.adminId || decodeData.userId) {
+      user = await adminModel.findById(decodeData.adminId || decodeData.userId);
+      if (user) {
+        req.admin = user;
+        req.user = user; // Also set as user for compatibility
+        req.userType = 'admin';
+        return next();
+      }
+    }
+
+    return res.status(401).send({
+      success: false,
+      message: "User not found in any user type",
+    });
+
   } catch (error) {
+    console.log("Auth error:", error);
     return res.status(401).send({
       success: false,
       message: "Invalid token",
+      error: error.message,
     });
   }
 };
 
-// FACULTY AUTH - Separate middleware for faculty
+// FACULTY AUTH - Specific faculty middleware
 export const isFacAuth = async (req, res, next) => {
   try {
+    // If already authenticated by isAuth, check if it's faculty
+    if (req.userType === 'faculty' && req.faculty) {
+      return next();
+    }
+
     const { token } = req.cookies;
-    // validation
     if (!token) {
       return res.status(401).send({
         success: false,
-        message: "Unauthorized faculty",
+        message: "Unauthorized faculty - No token",
       });
     }
-    const decodeData = jwt.verify(token, process.env.JWT_SECRET);
-    // Look for faculty using facultyId (check your token structure)
-    req.faculty = await facultyModel.findById(
-      decodeData.facultyId || decodeData.userId
-    );
 
-    if (!req.faculty) {
+    const decodeData = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Look for faculty using facultyId or userId
+    const faculty = await facultyModel.findById(decodeData.facultyId || decodeData.userId);
+
+    if (!faculty) {
       return res.status(401).send({
         success: false,
         message: "Faculty not found",
       });
     }
+
+    req.faculty = faculty;
+    req.userType = 'faculty';
     next();
   } catch (error) {
     return res.status(401).send({
       success: false,
-      message: "Invalid token",
+      message: "Invalid faculty token",
+      error: error.message,
     });
   }
 };
@@ -76,20 +112,33 @@ export const isFacAuth = async (req, res, next) => {
 // ADMIN AUTH
 export const isAdmin = async (req, res, next) => {
   try {
-    if (!req.admin) {
+    // If already authenticated by isAuth, check if it's admin
+    if (req.userType === 'admin' && req.admin) {
+      return next();
+    }
+
+    const { token } = req.cookies;
+    if (!token) {
       return res.status(401).send({
         success: false,
-        message: "Authentication required",
+        message: "Unauthorized admin - No token",
       });
     }
 
-    if (req.admin.role !== "admin") {
-      return res.status(403).send({
+    const decodeData = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Look for admin using adminId or userId
+    const admin = await adminModel.findById(decodeData.adminId || decodeData.userId);
+
+    if (!admin) {
+      return res.status(401).send({
         success: false,
-        message: "Admin access only",
+        message: "Admin not found",
       });
     }
 
+    req.admin = admin;
+    req.userType = 'admin';
     next();
   } catch (error) {
     return res.status(500).send({
