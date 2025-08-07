@@ -61,13 +61,13 @@ facultySchema.methods.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
 
-//JWT token
 facultySchema.methods.generateToken = function () {
-  return JWT.sign({ facultyId: this._id }, process.env.JWT_SECRET, {
+  return JWT.sign({ userId: this._id, role: 'faculty' }, process.env.JWT_SECRET, {
     expiresIn: "15d",
   });
 };
 
 export const facultyModel = mongoose.model("faculty", facultySchema);
 export default facultyModel;
+
 
