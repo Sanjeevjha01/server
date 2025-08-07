@@ -6,7 +6,10 @@ import adminModel from "../models/adminModel.js";
 // UNIFIED AUTH - Check all user types
 export const isAuth = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
+    // Try to get token from multiple sources
+    let token = req.cookies?.token || 
+                req.headers?.authorization?.replace('Bearer ', '') ||
+                req.headers?.cookie?.split('token=')[1]?.split(';')[0];
     
     // validation
     if (!token) {
@@ -32,23 +35,40 @@ export const isAuth = async (req, res, next) => {
       }
     }
 
-    // Check faculty model
-    if (decodeData.facultyId || decodeData.userId) {
-      user = await facultyModel.findById(decodeData.facultyId || decodeData.userId);
+    // Try faculty model
+      user = await facultyModel.findById(decodeData.userId);
       if (user) {
         req.faculty = user;
         req.user = user; // Also set as user for compatibility
         req.userType = 'faculty';
         return next();
       }
-    }
 
-    // Check admin model
-    if (decodeData.adminId || decodeData.userId) {
-      user = await adminModel.findById(decodeData.adminId || decodeData.userId);
+    // Try admin model
+      user = await adminModel.findById(decodeData.userId);
       if (user) {
         req.admin = user;
         req.user = user; // Also set as user for compatibility
+        req.userType = 'admin';
+        return next();
+      }
+    }
+  // Fallback: Try old token formats
+    if (decodeData.facultyId) {
+      user = await facultyModel.findById(decodeData.facultyId);
+      if (user) {
+        req.faculty = user;
+        req.user = user;
+        req.userType = 'faculty';
+        return next();
+      }
+    }
+
+    if (decodeData.adminId) {
+      user = await adminModel.findById(decodeData.adminId);
+      if (user) {
+        req.admin = user;
+        req.user = user;
         req.userType = 'admin';
         return next();
       }
@@ -77,7 +97,11 @@ export const isFacAuth = async (req, res, next) => {
       return next();
     }
 
-    const { token } = req.cookies;
+     // Get token from multiple sources
+    let token = req.cookies?.token || 
+                req.headers?.authorization?.replace('Bearer ', '') ||
+                req.headers?.cookie?.split('token=')[1]?.split(';')[0];
+    
     if (!token) {
       return res.status(401).send({
         success: false,
@@ -98,6 +122,7 @@ export const isFacAuth = async (req, res, next) => {
     }
 
     req.faculty = faculty;
+    req.user = faculty; // for compatibility
     req.userType = 'faculty';
     next();
   } catch (error) {
@@ -117,7 +142,11 @@ export const isAdmin = async (req, res, next) => {
       return next();
     }
 
-    const { token } = req.cookies;
+    // Get token from multiple sources
+    let token = req.cookies?.token || 
+                req.headers?.authorization?.replace('Bearer ', '') ||
+                req.headers?.cookie?.split('token=')[1]?.split(';')[0];
+    
     if (!token) {
       return res.status(401).send({
         success: false,
@@ -138,6 +167,7 @@ export const isAdmin = async (req, res, next) => {
     }
 
     req.admin = admin;
+    req.user = admin; // For compatibility
     req.userType = 'admin';
     next();
   } catch (error) {
@@ -148,3 +178,4 @@ export const isAdmin = async (req, res, next) => {
     });
   }
 };
+
