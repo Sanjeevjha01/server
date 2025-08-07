@@ -18,10 +18,11 @@ const router = express.Router();
 router.post("/fac-reg", facultyRegister);
 router.post("/fac-login", facultyLogin);
 router.get("/fac-logout", isFacAuth, facultyLogout);
-router.get("/fac-profile", isFacAuth, facultyProfile);
+router.get("/fac-profile", isAuth, facultyProfile);
 router.put("/fac-updatepass", isFacAuth, facultyUpdatePassword);
 router.put("/fac-updatepic", isFacAuth, singleUpload, updateProfilePic);
 router.delete("/fac-drop/:id", isAuth, isAdmin, dropFaculty);
 
 // export router
 export default router;
+
