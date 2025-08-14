@@ -100,7 +100,7 @@ export const loginController = async (req, res) => {
         expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
         secure: process.env.NODE_ENV === "development" ? true : false,
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === "development" ? "true" : "false",
+        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
       })
       .send({
         success: true,
@@ -256,3 +256,4 @@ export const dropUser = async (req, res) => {
     });
   }
 };
+
