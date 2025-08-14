@@ -1,13 +1,11 @@
-import cloudinary from "cloudinary";
 import userModel from "../models/userModel.js";
+import cloudinary from "cloudinary";
 import { getDataUri } from "../utils/features.js";
-
-// register controller
 export const registerController = async (req, res) => {
   try {
-    const { name, email, password, address, city, country, phone } = req.body;
-
-    // validation
+    const { name, email, password, address, city, country, phone, answer } =
+      req.body;
+    //validation
     if (
       !name ||
       !email ||
@@ -15,27 +13,26 @@ export const registerController = async (req, res) => {
       !address ||
       !city ||
       !country ||
-      !phone
+      !phone ||
+      !answer
     ) {
       return res.status(400).send({
         success: false,
-        message: "Please Provide all fields",
+        message: "Please provide all fields",
       });
     }
 
-    // check existing user
+    //check existing user
     const existingUser = await userModel.findOne({ email });
-
-    // validation
+    //validation
     if (existingUser) {
-      return res.status(409).send({
+      return res.status(500).send({
         success: false,
-        message: "Email already exist",
+        message: "email already exist",
       });
     }
 
-    // required to create user
-    const user = await userModel.create({
+    const user = new userModel({
       name,
       email,
       password,
@@ -43,32 +40,32 @@ export const registerController = async (req, res) => {
       city,
       country,
       phone,
+      answer,
     });
 
-    // save the user to the database
+    // Save the user to the database
     await user.save();
     res.status(201).send({
       success: true,
-      message: "Registration success, please login",
-      user,
+      message: "Registeration success, please login",
     });
   } catch (error) {
-    console.log(`Register Error is ${error}`);
+    console.log(error);
     res.status(500).send({
       success: false,
-      message: "Error in register api",
-      error: error.message,
+      message: "Error in register API",
+      error,
     });
   }
 };
 
-// login controller
+//login function
 export const loginController = async (req, res) => {
   try {
     const { email, password } = req.body;
     //validation
     if (!email || !password) {
-      return res.status(400).send({
+      return res.status(500).send({
         success: false,
         message: "Please add email or password",
       });
@@ -85,7 +82,7 @@ export const loginController = async (req, res) => {
     //check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).send({
+      return res.status(500).send({
         success: false,
         message: "invalid credentials",
       });
@@ -96,54 +93,31 @@ export const loginController = async (req, res) => {
       .status(200)
       .cookie("token", token, {
         expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-        secure: process.env.NODE_ENV === "production" ? true : false,
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "development" ? true : false,
+        httpOnly: process.env.NODE_ENV === "development" ? true : false,
+        sameSite: process.env.NODE_ENV === "development" ? true : false,
       })
       .send({
         success: true,
         message: "Login successfully",
         token,
-        user: { ...user._doc, role: "user" }, 
+        user,
       });
   } catch (error) {
     console.log(error);
     res.status(500).send({
       success: false,
       message: "Error in Login API",
-      error: error.message,
+      error,
     });
   }
 };
 
-// logout user controller
-export const logoutController = async (req, res) => {
-  try {
-    res
-      .status(200)
-      .cookie("token", "", {
-        expires: new Date(Date.now()),
-        secure: process.env.NODE_ENV === "production" ? true : false,
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      })
-      .send({
-        success: true,
-        message: "Logout successfull",
-      });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      success: false,
-      message: "Error in logout user api",
-    });
-  }
-};
-
-// get user profile
-export const getUserProfileController = async (req, res) => {
+//get user profile
+export const getUserProfile = async (req, res) => {
   try {
     const user = await userModel.findById(req.user._id);
+    user.password = undefined;
     res.status(200).send({
       success: true,
       message: "User profile fetched successfully",
@@ -151,32 +125,84 @@ export const getUserProfileController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-
     res.status(500).send({
       success: false,
-      message: "Error in get user profile api",
-      error: error.message,
+      message: "Error in profile API",
+      error,
     });
   }
 };
 
-// update password controller
-export const updatePassController = async (req, res) => {
+//logout
+export const logoutController = async (req, res) => {
+  try {
+    res
+      .status(200)
+      .cookie("token", "", {
+        expires: new Date(Date.now()),
+        secure: process.env.NODE_ENV === "development" ? true : false,
+        httpOnly: process.env.NODE_ENV === "development" ? true : false,
+        sameSite: process.env.NODE_ENV === "development" ? true : false,
+      })
+      .send({
+        success: true,
+        message: "logout successfully",
+      });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in Logout API",
+      error,
+    });
+  }
+};
+
+//update user profile
+export const updateProfileController = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+    const { name, email, address, city, country, phone } = req.body;
+    //validation + update
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (address) user.address = address;
+    if (city) user.city = city;
+    if (country) user.country = country;
+    if (phone) user.phone = phone;
+    //save user
+    await user.save();
+    res.status(200).send({
+      success: true,
+      message: "user profile updated",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in Update Profile API",
+      error,
+    });
+  }
+};
+
+//update password controller
+export const updatePasswordControll = async (req, res) => {
   try {
     const user = await userModel.findById(req.user._id);
     const { oldPassword, newPassword } = req.body;
-    // validation
+    //validation
     if (!oldPassword || !newPassword) {
-      return res.status(404).send({
+      return res.status(500).send({
         success: false,
         message: "Please provide old or new password",
       });
     }
-    // old password check
+    //old password check
     const isMatch = await user.comparePassword(oldPassword);
-    // validation
+    //validation
     if (!isMatch) {
-      return res.status(404).send({
+      return res.status(500).send({
         success: false,
         message: "Invalid old password",
       });
@@ -189,71 +215,80 @@ export const updatePassController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-
     res.status(500).send({
       success: false,
-      message: "Error in update password api",
-      error: error.message,
-    });
-  }
-};
-
-// update user profile photo
-export const updatePicController = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.user._id);
-    // getting file from user
-    const file = getDataUri(req.file);
-    // del prev image
-    if (user.profilePic && user.profilePic.public_id) {
-      await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
-    }
-    // update
-    const cdb = await cloudinary.v2.uploader.upload(file.content);
-    user.profilePic = {
-      public_id: cdb.public_id,
-      url: cdb.secure_url,
-    };
-    // save func
-    await user.save();
-    res.status(200).send({
-      success: true,
-      message: "Profile picture updated",
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({
-      success: false,
-      message: "Error in update profile pic api",
-      error: error.message,
-    });
-  }
-};
-
-// Delete user through admin
-export const dropUser = async (req, res) => {
-  try {
-    // find user id
-    const userId = req.params.id;
-    const user = await userModel.findByIdAndDelete(userId);
-
-    // validation\
-    if (!user) {
-      return res.status(404).send({
-        success: false,
-        message: "user not found",
-      });
-    }
-    res.status(200).send({
-      success: true,
-      message: "user deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).send({
-      success: false,
-      message: "Error in delete user api",
+      message: "Error in Update Password API",
       error,
     });
   }
 };
 
+//update profile photo
+export const updateProfilePhotoController = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+    // get file from user
+    const file = getDataUri(req.file);
+    //delete prev image
+    if (user.profilePic && user.profilePic.public_id) {
+      await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    }
+    //update
+    const cloudDb = await cloudinary.v2.uploader.upload(file.content);
+    user.profilePic = {
+      public_id: cloudDb.public_id,
+      url: cloudDb.secure_url,
+    };
+    //save func
+    await user.save();
+    res.status(200).send({
+      success: true,
+      message: "Profile pic updated",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in Update Profile Photo API",
+      error,
+    });
+  }
+};
+
+// forgot password
+export const passwordResetController = async (req, res) => {
+  try {
+    // user get email || newPassword || answer
+    const { email, newPassword, answer } = req.body;
+    // validation
+    if (!email || !newPassword || !answer) {
+      res.status(500).send({
+        success: false,
+        message: "Please provide all fields",
+      });
+    }
+    // find user
+    const user = await userModel.findOne({ email, answer });
+    //user validation
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "Invalid user or answer",
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.status(200).send({
+      success: true,
+      message: "Your password has been reset please login !",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in password reset api",
+      error,
+    });
+  }
+};
