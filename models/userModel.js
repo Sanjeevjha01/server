@@ -1,38 +1,38 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import JWT from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Name is required"],
+      required: [true, "name is required"],
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
-      unique: [true, "Email already taken"],
+      required: [true, "email is required"],
+      unique: [true, "email is already taken"],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
-      minLength: [8, "Password length must be 8 or greater than 8"],
+      required: [true, "password is required"],
+      minLength: [6, "password length should be greater than 6 character"],
     },
     address: {
       type: String,
-      required: [true, "Address is required"],
+      required: [true, "address is required"],
     },
     city: {
       type: String,
-      required: [true, "City is required"],
+      required: [true, "city is required"],
     },
     country: {
       type: String,
-      required: [true, "Country is required"],
+      required: [true, "country is required"],
     },
     phone: {
       type: String,
-      required: [true, "Phone number is required"],
+      required: [true, "phone no is required"],
     },
     profilePic: {
       public_id: {
@@ -42,28 +42,35 @@ const userSchema = new mongoose.Schema(
         type: String,
       },
     },
+    answer: {
+      type: String,
+      required: [true, "answer is required"],
+    },
+    role: {
+      type: String,
+      default: "user",
+    },
   },
   { timestamps: true }
 );
 
-// functions
 //haash function
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-// compare func
+//compare function
 userSchema.methods.comparePassword = async function (plainPassword) {
   return await bcrypt.compare(plainPassword, this.password);
 };
 
-// generate JWT token
+//JWT token
 userSchema.methods.generateToken = function () {
-  return jwt.sign({ userId: this._id }, process.env.JWT_SECRET, {
-    expiresIn: "15d",
+  return JWT.sign({ _id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
   });
 };
 
-export const userModel = mongoose.model("User", userSchema);
+export const userModel = mongoose.model("Users", userSchema);
 export default userModel;
