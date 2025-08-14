@@ -40,18 +40,14 @@ app.use(cookieParser());
 app.use("/api/v1", testRoutes);
 app.use("/api/v1/user", userRoutes);
 
-// // Faculty route
-// app.use("/api/v1/faculty", facultyRoutes);
 
-// // admin route
-// app.use("/api/v1/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   return res.status(200).send("<h1>Welcome Boss</h1>");
 });
 
 // port
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT ;
 
 // listen
 app.listen(PORT, () => {
@@ -59,3 +55,4 @@ app.listen(PORT, () => {
     `Server Running on ${PORT} on ${process.env.NODE_ENV} mode`.bgGreen.magenta
   );
 });
+
