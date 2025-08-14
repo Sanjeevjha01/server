@@ -127,7 +127,7 @@ export const logoutController = async (req, res) => {
         expires: new Date(Date.now()),
         secure: process.env.NODE_ENV === "development" ? true : false,
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === "development" ? "true" : "false",
+        sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
       })
       .send({
         success: true,
@@ -256,4 +256,5 @@ export const dropUser = async (req, res) => {
     });
   }
 };
+
 
